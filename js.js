@@ -18,29 +18,29 @@ var colors = [rgb(255, 255, 255), rgb(0, 0, 255), rgb(255, 0, 0), rgb(0, 255, 0)
 canvas.height = canvas.clientHeight;
 canvas.width = canvas.clientWidth;
 
-var size = 10;
-var H = Math.floor(canvas.height / size);
-var W = Math.floor(canvas.width / size);
-
+var side = 10;
+var H = Math.floor(canvas.height / side);
+var W = Math.floor(canvas.width / side);
+var wasmReady = false
 var CGuy = new Worker('CGuy.js');
 CGuy.onmessage = (e) => {
     if (e.data[0] == "ready") {
-        console.log("Wasm ready mesage recieved")
+        wasmReady = true;
+        console.log("Wasm ready mesage recieved", H, W)
         CGuy.postMessage(["Start", [H, W]]);
         CGuy.postMessage(["Next"]);
 
     }
 
     if (e.data[0] == "Redraw") {
-        console.log("redraw")
         for (let i = 0; i < e.data[1].length; i++) {
             const elm = e.data[1][i];
-            drawXYrect(elm[0], elm[1], side, colors[ele[2]]);
+            drawXYrect(elm[0] * side, elm[1] * side, side, colors[elm[2]]);
         }
         setTimeout(() => {
             CGuy.postMessage(["Next"]);
 
-        }, 500);
+        }, 10);
     }
 }
 
@@ -92,11 +92,13 @@ canvas.addEventListener('mousemove', function onMouseover(e) {
 let v = 1;
 
 canvas.addEventListener('click', () => {
-    console.log("click")
-    let x = Math.floor(ratonx / size);
-    let y = Math.floor(ratony / size);
-    v = (v + 1) % 3
-    CGuy.postMessage(["Set", [x, y, v]])
+    if (wasmReady) {
+        let x = Math.floor(ratonx / side);
+        let y = Math.floor(ratony / side);
+        v = (v + 1) % 3
+        CGuy.postMessage(["Set", [x, y, v + 1]])
+    }
+
 });
 
 window.addEventListener('DOMMouseScroll', mouseWheelEvent);

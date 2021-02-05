@@ -26,6 +26,7 @@ onmessage = (e) => {
         Module.__Z6initJSii(H, W)
     }
     if (e.data[0] == "Next") {
+        //console.log("Recived next")
         Module.__Z6stepJSv();
         Module.__Z18startTransmisionJSv();
         let H = Module.__Z10transmitJSv();
@@ -38,7 +39,7 @@ onmessage = (e) => {
                 let d = Module.__Z10transmitJSv()
                 if (board[y][x] != d) {
                     board[y][x] = d;
-                    ret.push([x, y, NewBoard[y][x]])
+                    ret.push([x, y, board[y][x]])
                 }
             }
         }

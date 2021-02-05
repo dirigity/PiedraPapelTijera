@@ -10,6 +10,8 @@ typedef short int tRow[MaxWidth];
 
 typedef tRow tRawGrid[MaxHeight];
 
+const int esquinas = 4;
+
 struct tGrid
 {
     tRawGrid contents;
@@ -28,6 +30,12 @@ tGrid mem;
 
 bool AwinsB(int a, int b)
 {
+
+    if (!(a > -1 && a < 4 && b > -1 && b < 4))
+    {
+        return false;
+    }
+
     if (a == b)
     {
         return false;
@@ -56,15 +64,19 @@ void clear(tGrid &mem)
 
 void EMSCRIPTEN_KEEPALIVE initJS(int h, int w)
 {
+    if (h > MaxHeight || w > MaxWidth)
+    {
+        cout << "jddalfñajsdfñaldskfjañsldkjasdñflkasjdfñlasdfkjañdklgfjlfdghjeirutqpewoiruqwpeoriuqwperoiquwerpoqwiepqwozm,xcvnbz,mvcnzbxcv,zmxncvz,mcxvnbz" << endl;
+    }
     mem.height = h;
     mem.width = w;
     clear(mem);
 }
-void actualize(int x, int y)
+void actualize(tGrid &mem, int x, int y)
 {
     const int deltaX[8] = {0, 0, 1, -1, 1, 1, -1, -1};
     const int deltaY[8] = {1, -1, 0, 0, -1, 1, -1, 1};
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < esquinas; i++)
     {
         mem.active[(y + deltaY[i]) % mem.height][(x + deltaX[i]) % mem.width] = true;
     }
@@ -73,12 +85,13 @@ void actualize(int x, int y)
 void EMSCRIPTEN_KEEPALIVE setXYVJS(int x, int y, int v)
 {
     mem.contents[y][x] = v;
-    mem.active[y ][x] = true;
-    actualize(x, y);
+    mem.active[y][x] = true;
+    actualize(mem, x, y);
 }
 
 void printMem()
 {
+    return;
     for (int y = 0; y < mem.height; y++)
     {
         for (int x = 0; x < mem.width; x++)
@@ -91,16 +104,16 @@ void printMem()
 
 void EMSCRIPTEN_KEEPALIVE stepJS()
 {
+    //cout << "step" << endl;
     printMem();
     tGrid next = mem;
     for (int y = 0; y < next.height; y++)
     {
         for (int x = 0; x < next.width; x++)
         {
-            next.active[y][x] = false;
+            next.active[y][x] = 0;
         }
     }
-    
 
     for (int y = 0; y < mem.height; y++)
     {
@@ -108,48 +121,41 @@ void EMSCRIPTEN_KEEPALIVE stepJS()
         {
             if (mem.active[y][x] == 1)
             {
-                int persistence = 0;
                 const int deltaX[8] = {0, 0, 1, -1, 1, 1, -1, -1};
                 const int deltaY[8] = {1, -1, 0, 0, -1, 1, -1, 1};
+                int a = mem.contents[y][x];
 
-                int sesinoDX = 0;
-                int sesinoDY = 0;
-
-                for (int i = 0; i < 8; i++)
+                //cout << "a:" << a << endl;
+                int puntuation = 0;
+                int PermanentB = -1;
+                for (int i = 0; i < esquinas; i++)
                 {
-
-                    if (AwinsB(mem.contents[y][x], mem.contents[(y + deltaY[i]) % mem.height][(x + deltaX[i]) % mem.width]))
+                    if (y + deltaY[i] > 0 && x + deltaX[i] > 0 && y + deltaY[i] < mem.height-1 && x + deltaX[i] < mem.width-1)
                     {
-                        persistence++;
-                    }
-                    if (AwinsB(mem.contents[y + deltaY[i]][x + deltaX[i]], mem.contents[y][x]))
-                    {
-                        sesinoDX = deltaX[i];
-                        sesinoDY = deltaY[i];
+                        int b = mem.contents[y + deltaY[i]][x + deltaX[i]];
+                        //cout << "b:" << b << endl;
 
-                        persistence--;
+                        if (AwinsB(b, a))
+                        {
+                            puntuation--;
+                            PermanentB = b;
+                        }
+                        else if(AwinsB(a,b)){
+                            puntuation++;
+                        }
                     }
                 }
-                if (persistence >= 0)
+                if (puntuation < 0)
                 {
-                    next.contents[y][x] = mem.contents[y][x];
-                    next.active[y][x] = 1;
-                }
-                else if (persistence < 0)
-                {
-                    mem.contents[y + sesinoDY][x + sesinoDX] = next.contents[y][x];
-                    next.active[y][x] = 1;
-                }
-                if (persistence != 0)
-                {
-                    actualize(x, y);
+
+                    next.contents[y][x] = PermanentB;
+                    actualize(next, x, y);
                 }
             }
         }
     }
     mem = next;
 }
-
 
 int transmitionProgress = -1;
 int transmitionY = 0;
